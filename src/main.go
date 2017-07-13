@@ -41,6 +41,11 @@ func makeMongo(mongoConfig config.MongoConfig) *mgo.Database {
 	return session.DB(mongoConfig.Database)
 }
 
+type CommandArgs struct {
+	gouter.Args
+	Update *telegram.Update
+}
+
 func main() {
 	appConfig, err := loadConfig()
 	if err != nil {
@@ -66,11 +71,14 @@ func main() {
 	g := gouter.New()
 	g.Add("/cinema", commands.CinemaCommand{})
 
-
 	for update := range updates {
 		if update.Message == nil {
 			continue
 		}
-		g.Run(update.Message.Text)
+		args := CommandArgs{
+			Args:   gouter.Args{Command: update.Message.Text},
+			Update: &update,
+		}
+		g.Run(args)
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 	"fmt"
-	"log"
+	"github.com/earlcherry/gouter"
 )
 
 type CinemaCommand struct {
@@ -14,13 +14,13 @@ type CinemaCommand struct {
 	url string
 }
 
-func (c CinemaCommand) Run(){
+func (c CinemaCommand) Run(args gouter.Args) error {
 
 	url := c.getPictureUrl()
 	resp, err := http.Get(url)
 	defer resp.Body.Close()
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 	var msg telegram.Chattable
 	if resp.Header.Get("Content-Type") != "image/jpeg" {
@@ -34,7 +34,7 @@ func (c CinemaCommand) Run(){
 	}
 
 	c.Bot.Send(msg)
-
+	return nil
 }
 
 func (c CinemaCommand) getPictureUrl() string {

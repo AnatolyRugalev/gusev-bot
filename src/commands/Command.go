@@ -1,5 +1,7 @@
 package commands
 
+import "github.com/earlcherry/gouter"
+
 type Command interface {
-	Run()
+	Run(args gouter.Args) error
 }
