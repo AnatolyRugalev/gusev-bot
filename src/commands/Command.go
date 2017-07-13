@@ -7,4 +7,3 @@ import (
 type Command interface {
 	Run(update *telegram.Update) (error)
 }
-

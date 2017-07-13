@@ -4,22 +4,55 @@ import (
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"io/ioutil"
+	"flag"
+	"encoding/json"
+	"github.com/AnatolyRugalev/gusev-bot/src/config"
 	"github.com/AnatolyRugalev/gusev-bot/src/router"
+	"gopkg.in/mgo.v2"
+	"fmt"
 )
 
-func loadToken() string {
-	token, err := ioutil.ReadFile("bot.token")
+func loadConfig() (*config.AppConfig, error) {
+	configFile := flag.String("config", "config.json", "appConfig file path")
+	configJson, err := ioutil.ReadFile(*configFile)
+	var appConfig config.AppConfig
+	err = json.Unmarshal(configJson, &appConfig)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return string(token)
+	return &appConfig, nil
 }
 
-func main() {
-	bot, err := telegram.NewBotAPI(loadToken())
+func makeBot(botConfig config.BotConfig) *telegram.BotAPI {
+	bot, err := telegram.NewBotAPI(botConfig.Token)
 	if err != nil {
 		log.Panic(err)
 	}
+	return bot
+}
+
+func makeMongo(mongoConfig config.MongoConfig) *mgo.Database {
+	session, err := mgo.Dial(mongoConfig.Host)
+
+	if err != nil {
+		log.Panic(err)
+	}
+	return session.DB(mongoConfig.Database)
+}
+
+func main() {
+	appConfig, err := loadConfig()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	bot := makeBot(appConfig.Bot)
+
+	mongo := makeMongo(appConfig.Mongo)
+
+	collections, err := mongo.CollectionNames()
+
+	fmt.Printf("%v", collections)
 
 	bot.Debug = true
 
