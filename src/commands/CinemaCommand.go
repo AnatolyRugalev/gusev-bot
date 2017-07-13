@@ -14,7 +14,7 @@ type CinemaCommand struct {
 	url string
 }
 
-func (c CinemaCommand) Run(args gouter.Args) error {
+func (c CinemaCommand) Run(args gouter.RouteArgs) error {
 
 	url := c.getPictureUrl()
 	resp, err := http.Get(url)

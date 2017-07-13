@@ -42,7 +42,7 @@ func makeMongo(mongoConfig config.MongoConfig) *mgo.Database {
 }
 
 type CommandArgs struct {
-	gouter.Args
+	gouter.SimpleRouteArgs
 	Update *telegram.Update
 }
 
@@ -76,9 +76,9 @@ func main() {
 			continue
 		}
 		args := CommandArgs{
-			Args:   gouter.Args{Command: update.Message.Text},
 			Update: &update,
 		}
+		args.SetRoute(update.Message.Text)
 		g.Run(args)
 	}
 }
