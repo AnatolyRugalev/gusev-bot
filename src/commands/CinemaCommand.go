@@ -5,26 +5,28 @@ import (
 	"net/http"
 	"time"
 	"fmt"
+	"log"
 )
 
 type CinemaCommand struct {
 	Bot *telegram.BotAPI
+	Update *telegram.Update
 	url string
 }
 
-func (c CinemaCommand) Run(update *telegram.Update) error {
+func (c CinemaCommand) Run(){
 
 	url := c.getPictureUrl()
 	resp, err := http.Get(url)
 	defer resp.Body.Close()
 	if err != nil {
-		return err
+		log.Panic(err)
 	}
 	var msg telegram.Chattable
 	if resp.Header.Get("Content-Type") != "image/jpeg" {
-		msg = telegram.NewMessage(update.Message.Chat.ID, "Ошибка загрузки расписания")
+		msg = telegram.NewMessage(c.Update.Message.Chat.ID, "Ошибка загрузки расписания")
 	} else {
-		msg = telegram.NewPhotoUpload(update.Message.Chat.ID, telegram.FileReader{
+		msg = telegram.NewPhotoUpload(c.Update.Message.Chat.ID, telegram.FileReader{
 			Name:   "cinema.jpg",
 			Reader: resp.Body,
 			Size:   resp.ContentLength,
@@ -32,7 +34,7 @@ func (c CinemaCommand) Run(update *telegram.Update) error {
 	}
 
 	c.Bot.Send(msg)
-	return nil
+
 }
 
 func (c CinemaCommand) getPictureUrl() string {

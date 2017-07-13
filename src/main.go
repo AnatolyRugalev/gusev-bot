@@ -7,9 +7,10 @@ import (
 	"flag"
 	"encoding/json"
 	"github.com/AnatolyRugalev/gusev-bot/src/config"
-	"github.com/AnatolyRugalev/gusev-bot/src/router"
+	"github.com/earlcherry/gouter"
 	"gopkg.in/mgo.v2"
 	"fmt"
+	"github.com/AnatolyRugalev/gusev-bot/src/commands"
 )
 
 func loadConfig() (*config.AppConfig, error) {
@@ -62,20 +63,14 @@ func main() {
 	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
+	g := gouter.New()
+	g.Add("/cinema", commands.CinemaCommand{})
 
-	r := router.Router{
-		Bot: bot,
-	}
 
 	for update := range updates {
 		if update.Message == nil {
 			continue
 		}
-
-		cmd := r.Route(&update)
-		if cmd == nil {
-			continue
-		}
-		cmd.Run(&update)
+		g.Run(update.Message.Text)
 	}
 }
