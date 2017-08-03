@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"io/ioutil"
+	"errors"
 )
 
 type CinemaCommand struct {
@@ -14,21 +15,24 @@ type CinemaCommand struct {
 }
 
 func (c CinemaCommand) Run(update *telegram.Update) error {
-	url := c.getPictureUrl()
-	resp, err := http.Get(url)
+	urls, err := c.getPictureUrls()
+	if err != nil {
+		return err
+	}
+	resp, err := http.Get(urls[0])
 	if err != nil {
 		return err
 	}
 	var msg telegram.Chattable
-	//if resp.Header.Get("Content-Type") != "image/jpeg" {
-	//	msg = telegram.NewMessage(c.Update.Message.Chat.ID, "Ошибка загрузки расписания")
-	//} else {
+	if resp.Header.Get("Content-Type") != "image/jpeg" {
+		msg = telegram.NewMessage(c.Update.Message.Chat.ID, "Ошибка загрузки расписания")
+	} else {
 		msg = telegram.NewPhotoUpload(update.Message.Chat.ID, telegram.FileReader{
 			Name:   "cinema.jpg",
 			Reader: resp.Body,
 			Size:   resp.ContentLength,
 		})
-	//}
+	}
 
 	c.Bot.Send(msg)
 	return nil
@@ -36,17 +40,24 @@ func (c CinemaCommand) Run(update *telegram.Update) error {
 
 const baseUrl string = "http://lumenfilm.com"
 
-func (c CinemaCommand) getPictureUrl() string {
+func (c CinemaCommand) getPictureUrls() ([]string, error) {
 	resp, err := http.Get(baseUrl + "/gusev/affishe")
+	var result []string
 	if err != nil {
-		panic(err)
+		return result, err
 	}
 	content, _ := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	r := regexp.MustCompile("<img\\s.*?src=[\"']([^'\"]+)[\"']\\s?.*?>")
-	match := r.FindStringSubmatch(string(content))
-	if len(match) > 1 {
-		return baseUrl+match[1]
+	matches := r.FindAllStringSubmatch(string(content), 7)
+	for _, match := range matches {
+		if len(match) > 1 {
+			result = append(result, baseUrl + match[1])
+		}
 	}
-	return ""
+	if len(result) > 0 {
+		return result, nil
+	} else {
+		return result, errors.New("Cannot match any image on page")
+	}
 }
