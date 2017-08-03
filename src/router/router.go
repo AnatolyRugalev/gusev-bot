@@ -5,9 +5,15 @@ import (
 	"github.com/AnatolyRugalev/gusev-bot/src/commands"
 )
 
-func Route(update *telegram.Update){
+type Router struct {
+	Bot *telegram.BotAPI
+}
+
+func (r *Router) Route(update *telegram.Update) {
 	if update.Message.Text == "/cinema" {
-		command:=commands.CinemaCommand{}
+		command := commands.CinemaCommand{
+			Bot: r.Bot,
+		}
 		command.Run(update)
 	}
 }

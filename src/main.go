@@ -63,10 +63,14 @@ func main() {
 
 	updates, err := bot.GetUpdatesChan(u)
 
+	r := router.Router{
+		Bot: bot,
+	}
+
 	for update := range updates {
 		if update.Message == nil {
 			continue
 		}
-		router.Route(&update)
+		r.Route(&update)
 	}
 }
