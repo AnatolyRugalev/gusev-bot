@@ -33,6 +33,10 @@ func makeBot(botConfig config.BotConfig) *telegram.BotAPI {
 
 func makeMongo(mongoConfig config.MongoConfig) *mgo.Database {
 	session, err := mgo.Dial(mongoConfig.Host)
+	session.Login(&mgo.Credential{
+		Username:mongoConfig.Username,
+		Password:mongoConfig.Password,
+	})
 
 	if err != nil {
 		log.Panic(err)
@@ -65,12 +69,10 @@ func main() {
 
 	r := router.Router{
 		Bot: bot,
+		Mongo: mongo,
 	}
 
 	for update := range updates {
-		if update.Message == nil {
-			continue
-		}
 		r.Route(&update)
 	}
 }
