@@ -3,41 +3,50 @@ package commands
 import (
 	telegram "github.com/go-telegram-bot-api/telegram-bot-api"
 	"net/http"
-	"time"
-	"fmt"
-	"github.com/earlcherry/gouter"
+	"regexp"
+	"io/ioutil"
 )
 
 type CinemaCommand struct {
-	Bot *telegram.BotAPI
+	Bot    *telegram.BotAPI
 	Update *telegram.Update
-	url string
+	url    string
 }
 
-func (c CinemaCommand) Run(args gouter.RouteArgs) error {
-
+func (c CinemaCommand) Run(update *telegram.Update) error {
 	url := c.getPictureUrl()
 	resp, err := http.Get(url)
-	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
 	var msg telegram.Chattable
-	if resp.Header.Get("Content-Type") != "image/jpeg" {
-		msg = telegram.NewMessage(c.Update.Message.Chat.ID, "Ошибка загрузки расписания")
-	} else {
-		msg = telegram.NewPhotoUpload(c.Update.Message.Chat.ID, telegram.FileReader{
+	//if resp.Header.Get("Content-Type") != "image/jpeg" {
+	//	msg = telegram.NewMessage(c.Update.Message.Chat.ID, "Ошибка загрузки расписания")
+	//} else {
+		msg = telegram.NewPhotoUpload(update.Message.Chat.ID, telegram.FileReader{
 			Name:   "cinema.jpg",
 			Reader: resp.Body,
 			Size:   resp.ContentLength,
 		})
-	}
+	//}
 
 	c.Bot.Send(msg)
 	return nil
 }
 
+const baseUrl string = "http://lumenfilm.com"
+
 func (c CinemaCommand) getPictureUrl() string {
-	t := time.Now()
-	return fmt.Sprintf("http://lumenfilm.com/uploads/%02d.jpg", t.Day())
+	resp, err := http.Get(baseUrl + "/gusev/affishe")
+	if err != nil {
+		panic(err)
+	}
+	content, _ := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	r := regexp.MustCompile("<img\\s.*?src=[\"']([^'\"]+)[\"']\\s?.*?>")
+	match := r.FindStringSubmatch(string(content))
+	if len(match) > 1 {
+		return baseUrl+match[1]
+	}
+	return ""
 }

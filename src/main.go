@@ -7,10 +7,9 @@ import (
 	"flag"
 	"encoding/json"
 	"github.com/AnatolyRugalev/gusev-bot/src/config"
-	"github.com/earlcherry/gouter"
 	"gopkg.in/mgo.v2"
 	"fmt"
-	"github.com/AnatolyRugalev/gusev-bot/src/commands"
+	"github.com/AnatolyRugalev/gusev-bot/src/router"
 )
 
 func loadConfig() (*config.AppConfig, error) {
@@ -41,11 +40,6 @@ func makeMongo(mongoConfig config.MongoConfig) *mgo.Database {
 	return session.DB(mongoConfig.Database)
 }
 
-type CommandArgs struct {
-	gouter.SimpleRouteArgs
-	Update *telegram.Update
-}
-
 func main() {
 	appConfig, err := loadConfig()
 	if err != nil {
@@ -68,17 +62,11 @@ func main() {
 	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
-	g := gouter.New()
-	g.Add("/cinema", commands.CinemaCommand{})
 
 	for update := range updates {
 		if update.Message == nil {
 			continue
 		}
-		args := CommandArgs{
-			Update: &update,
-		}
-		args.SetRoute(update.Message.Text)
-		g.Run(args)
+		router.Route(&update)
 	}
 }
